@@ -133,3 +133,121 @@ module.exports = router;
 - **Backend Logic**: Implements a user deletion function using Sequelize ORM.
 - **Route Setup**: Secures the delete route with authentication and authorization middleware.
 - **Frontend Interaction**: Simple form allows users to input a username and trigger the delete action.
+
+
+
+### Markdown Documentation for Delete User Functionality
+
+---
+
+## Delete User Functionality
+
+### Purpose:
+In this challenge, we are tasked with adding a **delete user** functionality to a web application. The goal is to allow a user to delete another user based on their username, but only after proper **authentication** and **authorization** checks are performed.
+
+### Backend Implementation
+
+#### 1. **authController.js** - Adding the delete function
+We create a new function called `delete_user_by_username` inside the `authController.js` file to handle the user deletion logic. This function uses Sequelize ORM to remove a user from the database by their username.
+
+```javascript
+// authController.js
+
+const delete_user_by_username = async (req, res) => {
+    try {
+        const { username } = req.body;
+        const deleted = await UserModel.destroy({
+            where: { username }
+        });
+
+        if (deleted) {
+            return res.status(200).send(`User ${username} deleted successfully`);
+        } else {
+            return res.status(404).send('User not found');
+        }
+    } catch (error) {
+        return res.status(500).send('Server error');
+    }
+};
+```
+
+#### 2. **Routes** - Adding the delete route
+We include a POST route to trigger the `delete_user_by_username` function after proper authentication and authorization.
+
+```javascript
+// authHandling.js
+
+router.post(
+    "/delete/user",
+    authentication, // Ensure the user is authenticated
+    authorisation({ isAdmin: false }), // Authorization logic can be updated as needed
+    (req, res) => authController.delete_user_by_username(req, res)
+);
+```
+
+### Frontend Implementation
+
+We create a basic form that allows users to input the username of the user they wish to delete. This form sends a POST request to the backend, triggering the deletion process.
+
+#### 3. **HTML Form**
+```html
+<!-- HTML form to delete user -->
+<form id="delete-user-form">
+    <label for="other-username">Enter the username to delete:</label>
+    <input type="text" id="other-username" name="other-username" required>
+    <button type="submit">Delete User</button>
+</form>
+```
+
+#### 4. **JavaScript Handler**
+We use the Fetch API in JavaScript to handle the form submission, sending a POST request with the username to delete.
+
+```javascript
+// JavaScript handler for delete user functionality
+document.getElementById("delete-user-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("other-username").value;
+    
+    const response = await fetch(`http://localhost:4001/auth/delete/user`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username })
+    });
+    
+    const result = await response.text();
+    alert(result); // Show the result to the user
+});
+```
+
+### Authentication vs Authorization: Explanation
+
+Authentication and authorization are two different processes often confused with one another. Let’s define and explain their differences.
+
+#### **Authentication**: 
+This process verifies the identity of the user. It confirms "who" the user is through credentials like username/password or tokens (JWT). In this delete functionality, we authenticate the user before they can proceed to delete any user.
+
+#### **Authorization**:
+Authorization controls "what" the user is allowed to do. After authentication, the system checks if the user has the rights or permissions to delete another user. 
+
+In our case, even though a user is authenticated, they may not have the necessary authorization to delete users unless they meet certain criteria (e.g., admin privileges).
+
+### Pros and Cons of "Delete after Authentication" Approach
+
+**Pros:**
+- Simplicity: A basic authentication check ensures that only logged-in users can delete another user.
+- Security: Prevents unauthenticated users from accessing the delete functionality.
+
+**Cons:**
+- Insufficient Protection: If only authentication is checked, any authenticated user may delete another user without proper authorization.
+- Potential Exploits: Malicious users with a valid account could delete other users without restrictions.
+
+**Recommendation:**
+A better approach would be to check both **authentication** and **authorization**. This ensures that only users with the proper permissions (like admin rights) can delete other users, making the system more secure.
+
+### Diagram
+
+The following diagram illustrates the interaction between **authentication** and **authorization** during the delete user process.
+
+![Delete User Process](Diagram/Image.png)
